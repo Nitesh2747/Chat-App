@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-const API = 'http://localhost:3001/api/auth';
+const API = `${import.meta.env.VITE_API_URL}/api/auth`;
 
 export default function Auth({ onAuth }) {
   const [error, setError] = useState('');
