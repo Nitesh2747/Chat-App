@@ -1,16 +1,18 @@
+[← Back to project overview](../README.md)
+
 # Chat App — Backend
 
 Real-time chat API built with Express, Socket.IO, and MongoDB (Mongoose).
 
 ## Features
 
-- JWT-based authentication (signup/login)
+- JWT-based authentication (signup/login), with bcrypt-hashed passwords
 - Real-time messaging via Socket.IO, scoped to per-conversation rooms
-- One-to-one DMs and group conversations
-- Friend request system (DMs require an accepted friend request)
+- One-to-one DMs and group conversations; DMs require an accepted friend request
 - Message delivery/read receipts, typing indicators, message editing and deletion
-- Group membership management (add/remove, creator-only removal)
-- Rate limiting, Helmet security headers, CORS locked to a single origin
+- Group membership management (add/remove members, creator-only removal), with join/leave system messages
+- Delete chat (hide-for-requester, or hard-delete when the other DM participant's account no longer exists) and account deletion
+- Rate limiting, Helmet security headers, CORS locked to a single origin, request size limits
 
 ## Tech stack
 

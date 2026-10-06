@@ -21,6 +21,12 @@
   font-weight: 500;
 }
 
+.slow-connection-msg {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
 /* ---------- User Profile Menu ---------- */
 .user-menu {
   position: relative;

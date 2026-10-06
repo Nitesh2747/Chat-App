@@ -1,3 +1,5 @@
+[← Back to project overview](../README.md)
+
 # Chat App — Frontend
 
 React client for a real-time WhatsApp/Discord-inspired chat app.
@@ -5,10 +7,12 @@ React client for a real-time WhatsApp/Discord-inspired chat app.
 ## Features
 
 - Login/signup with persistent sessions
-- Real-time one-to-one and group messaging
-- Friend requests, searchable user lookup
-- Typing indicators, delivered/read receipts, unread badges
-- Message editing (15-minute window) and permanent deletion
+- Real-time one-to-one and group messaging, with friend-request-gated DMs
+- Searchable user lookup (no open user directory)
+- Group management: add members anytime, creator-only member removal, join/leave notices
+- Typing indicators, delivered/read receipts, unread badges and message previews
+- Message editing (15-minute window) and permanent deletion, both reflected live
+- Delete chat (hidden for you, or permanently removed if the other user deleted their account) and account deletion
 - Responsive layout with a mobile sidebar drawer
 - Dark, Discord-inspired custom theme
 

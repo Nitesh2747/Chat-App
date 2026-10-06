@@ -9,12 +9,16 @@ export default function Auth({ onAuth }) {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [slowConnection, setSlowConnection] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
     setLoading(true);
+    setSlowConnection(false);
+
+    const slowTimer = setTimeout(() => setSlowConnection(true), 2000);
 
     try {
       const res = await fetch(`${API}/${mode}`, {
@@ -28,6 +32,8 @@ export default function Auth({ onAuth }) {
     } catch (err) {
       setError(err.message);
     } finally {
+      clearTimeout(slowTimer);
+      setSlowConnection(false);
       setLoading(false);
     }
   }
@@ -73,8 +79,20 @@ export default function Auth({ onAuth }) {
         {error && <div className="auth-error">{error}</div>}
 
         <button type="submit" disabled={loading || !username.trim() || !password}>
-          {loading ? 'Please wait...' : isLogin ? 'Log in' : 'Sign up'}
+          {loading
+            ? slowConnection
+              ? 'Waking up server...'
+              : 'Please wait...'
+            : isLogin
+              ? 'Log in'
+              : 'Sign up'}
         </button>
+
+        {slowConnection && (
+          <p className="slow-connection-msg">
+            The server is waking up from sleep — this can take up to some few seconds on the first request.
+          </p>
+        )}
 
         <button
           type="button"

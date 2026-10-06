@@ -62,7 +62,7 @@ const onlineUsers = {}; // socket.id -> username
 const userSockets = {}; // userId -> Set of socket.id
 const typingByConversation = {}; // conversationId -> Set of usernames
 const uniqueOnline = () => [...new Set(Object.values(onlineUsers))];
-const EDIT_WINDOW_MS = 5 * 60 * 1000; // 5 * 60 * 1000 = 5 minutes
+const EDIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 
 export function addUserToRoom(userId, roomId) {
   const socketIds = userSockets[userId];

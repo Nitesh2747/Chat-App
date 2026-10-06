@@ -12,7 +12,7 @@ export function convoLabel(convo, myUsername) {
   return other?.username ?? 'Deleted User';
 }
 
-export const EDIT_WINDOW_MS = 5 * 60 * 1000; // 5 * 60 * 1000 = 5 minutes
+export const EDIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 
 export function canEdit(msg, username) {
   return msg.user === username && Date.now() - msg.timestamp <= EDIT_WINDOW_MS;
