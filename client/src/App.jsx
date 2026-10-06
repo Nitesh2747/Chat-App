@@ -130,18 +130,34 @@ function App() {
   useEffect(() => {
     if (inputRef.current) {
       const el = inputRef.current;
+      const maxHeight = 140;
       el.style.height = 'auto';
-      el.style.height = `${el.scrollHeight}px`;
+      if (el.scrollHeight > maxHeight) {
+        el.style.height = `${maxHeight}px`;
+        el.style.overflowY = 'auto';
+      } else {
+        el.style.height = `${el.scrollHeight}px`;
+        el.style.overflowY = 'hidden';
+      }
     }
   }, [input]);
 
   useEffect(() => {
+    function onTyping({ conversationId, username: who }) {
+      if (activeConvoRef.current?._id !== conversationId) return;
+      setTypingUsers((prev) => (prev.includes(who) ? prev : [...prev, who]));
+    }
+
+    function onStopTyping({ conversationId, username: who }) {
+      if (activeConvoRef.current?._id !== conversationId) return;
+      setTypingUsers((prev) => prev.filter((u) => u !== who));
+    }
+
     function onChatMessage(msg) {
       setMessages((prev) =>
         activeConvoRef.current?._id === msg.conversation ? [...prev, msg] : prev
       );
       if (msg.system) return;
-
       setConversations((prev) => {
         const exists = prev.some((c) => c._id === msg.conversation);
         if (!exists) {
@@ -154,7 +170,13 @@ function App() {
               ? {
                 ...c,
                 lastMessageAt: msg.timestamp,
-                lastMessage: { text: msg.text, user: msg.user, timestamp: msg.timestamp },
+                lastMessage: {
+                  text: msg.text,
+                  user: msg.user,
+                  timestamp: msg.timestamp,
+                  messageId: msg._id,
+                  status: msg.deliveredTo?.length ? 'delivered' : 'sent',
+                },
                 unreadCount:
                   activeConvoRef.current?._id === msg.conversation ? 0 : (c.unreadCount || 0) + 1,
               }
@@ -162,16 +184,6 @@ function App() {
           )
           .sort((a, b) => new Date(b.lastMessageAt) - new Date(a.lastMessageAt));
       });
-    }
-
-    function onTyping({ conversationId, username: who }) {
-      if (activeConvoRef.current?._id !== conversationId) return;
-      setTypingUsers((prev) => (prev.includes(who) ? prev : [...prev, who]));
-    }
-
-    function onStopTyping({ conversationId, username: who }) {
-      if (activeConvoRef.current?._id !== conversationId) return;
-      setTypingUsers((prev) => prev.filter((u) => u !== who));
     }
 
     function onReadUpdate({ conversationId, ids, reader }) {
@@ -183,6 +195,13 @@ function App() {
               ? { ...m, readBy: [...(m.readBy || []), reader] }
               : m
           )
+      );
+      setConversations((prev) =>
+        prev.map((c) =>
+          c._id === conversationId && ids.includes(c.lastMessage?.messageId)
+            ? { ...c, lastMessage: { ...c.lastMessage, status: 'read' } }
+            : c
+        )
       );
     }
 
@@ -196,11 +215,26 @@ function App() {
               : m
           )
       );
+      setConversations((prev) =>
+        prev.map((c) =>
+          c._id === conversationId && c.lastMessage?.status === 'sent' && ids.includes(c.lastMessage?.messageId)
+            ? { ...c, lastMessage: { ...c.lastMessage, status: 'delivered' } }
+            : c
+        )
+      );
     }
 
     function onMessageEdited({ conversationId, messageId, text }) {
-      if (activeConvoRef.current?._id !== conversationId) return;
-      setMessages((prev) => prev.map((m) => (m._id === messageId ? { ...m, text, edited: true } : m)));
+      if (activeConvoRef.current?._id === conversationId) {
+        setMessages((prev) => prev.map((m) => (m._id === messageId ? { ...m, text, edited: true } : m)));
+      }
+      setConversations((prev) =>
+        prev.map((c) =>
+          c._id === conversationId && c.lastMessage?.messageId === messageId
+            ? { ...c, lastMessage: { ...c.lastMessage, text } }
+            : c
+        )
+      );
     }
 
     function onMessageDeleted({ conversationId, messageId }) {
@@ -448,6 +482,10 @@ function App() {
         <FriendRequestsModal
           onClose={() => setShowFriendRequests(false)}
           onRequestHandled={() => setPendingRequestCount((c) => Math.max(0, c - 1))}
+          onChatStarted={(convo) => {
+            handleConversationCreated(convo);
+            setShowFriendRequests(false);
+          }}
         />
       )}
     </div>

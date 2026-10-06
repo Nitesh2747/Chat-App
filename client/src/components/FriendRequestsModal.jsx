@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { getFriendRequests, acceptFriendRequest, declineFriendRequest } from '../data/api.js';
 import { avatarColor } from '../utils/helpers';
+import { getFriendRequests, acceptFriendRequest, declineFriendRequest, startDm } from '../data/api.js';
 
-export default function FriendRequestsModal({ onClose, onRequestHandled }) {
+export default function FriendRequestsModal({ onClose, onRequestHandled, onChatStarted }) {
   const [requests, setRequests] = useState([]);
   const [error, setError] = useState('');
 
@@ -15,6 +15,8 @@ export default function FriendRequestsModal({ onClose, onRequestHandled }) {
       await acceptFriendRequest(req._id);
       setRequests((prev) => prev.filter((r) => r._id !== req._id));
       onRequestHandled?.();
+      const convo = await startDm(req.from._id);
+      onChatStarted?.(convo);
     } catch (err) {
       setError(err.message);
     }

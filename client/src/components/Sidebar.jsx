@@ -27,11 +27,21 @@ export default function Sidebar({
           <div className="sidebar-actions">
             <span className="sidebar-title">Direct Messages</span>
             <div className="sidebar-action-buttons">
-              <button className="new-chat-btn requests-btn" onClick={onOpenRequests} title="Friend requests">
+              <button
+                className="new-chat-btn requests-btn"
+                onClick={() => { onCloseSidebar(); onOpenRequests(); }}
+                title="Friend requests"
+              >
                 🔔
                 {pendingRequestCount > 0 && <span className="requests-badge">{pendingRequestCount}</span>}
               </button>
-              <button className="new-chat-btn" onClick={onNewChat} title="New chat">+</button>
+              <button
+                className="new-chat-btn"
+                onClick={() => { onCloseSidebar(); onNewChat(); }}
+                title="New chat"
+              >
+                +
+              </button>
             </div>
           </div>
         </div>
@@ -49,8 +59,18 @@ export default function Sidebar({
                 <span className="convo-name">{convoLabel(c, username)}</span>
                 {c.lastMessage && (
                   <span className="convo-preview">
-                    {c.lastMessage.user === username ? 'You: ' : ''}
-                    {c.lastMessage.text}
+                    {c.isGroup ? (
+                      <>{c.lastMessage.user === username ? 'You' : c.lastMessage.user}: {c.lastMessage.text}</>
+                    ) : c.lastMessage.user === username ? (
+                      <>
+                        <span className={`preview-ticks ${c.lastMessage.status === 'read' ? 'read' : ''}`}>
+                          {c.lastMessage.status === 'sent' ? '✓' : '✓✓'}
+                        </span>{' '}
+                        {c.lastMessage.text}
+                      </>
+                    ) : (
+                      c.lastMessage.text
+                    )}
                   </span>
                 )}
               </div>

@@ -134,8 +134,12 @@ io.on('connection', (socket) => {
           (byConvo[key] ||= []).push(m._id);
         });
 
-        Object.entries(byConvo).forEach(([convId, ids]) => {
+        Object.entries(byConvo).forEach(async ([convId, ids]) => {
           io.to(convId).emit('delivered update', { conversationId: convId, ids, deliveredTo: username });
+          const convo = await Conversation.findById(convId);
+          if (convo?.lastMessage?.status === 'sent' && ids.map(String).includes(convo.lastMessage.messageId?.toString())) {
+            await Conversation.findByIdAndUpdate(convId, { $set: { 'lastMessage.status': 'delivered' } });
+          }
         });
       }
     })
@@ -156,7 +160,13 @@ io.on('connection', (socket) => {
       await Conversation.findByIdAndUpdate(conversationId, {
         $set: {
           lastMessageAt: new Date(),
-          lastMessage: { text: saved.text, user: saved.user, timestamp: saved.timestamp, messageId: saved._id },
+          lastMessage: {
+            text: saved.text,
+            user: saved.user,
+            timestamp: saved.timestamp,
+            messageId: saved._id,
+            status: deliveredTo.length > 0 ? 'delivered' : 'sent',
+          },
           hiddenFor: [],
         },
       });
@@ -210,6 +220,12 @@ io.on('connection', (socket) => {
         messageId: message._id,
         text: message.text,
       });
+      const convo = await Conversation.findById(conversationId);
+      if (convo?.lastMessage?.messageId?.toString() === message._id.toString()) {
+        await Conversation.findByIdAndUpdate(conversationId, {
+          $set: { 'lastMessage.text': message.text },
+        });
+      }
     } catch (err) {
       console.error('Failed to edit message:', err);
     }
@@ -255,6 +271,12 @@ io.on('connection', (socket) => {
         { _id: { $in: ids }, conversation: conversationId, user: { $ne: username } },
         { $addToSet: { readBy: username, deliveredTo: username } }
       );
+      const convo = await Conversation.findById(conversationId);
+      if (convo?.lastMessage?.messageId?.toString() === undefined) {
+        // no-op guard, convo may lack lastMessage
+      } else if (ids.map(String).includes(convo.lastMessage.messageId?.toString())) {
+        await Conversation.findByIdAndUpdate(conversationId, { $set: { 'lastMessage.status': 'read' } });
+      }
       await Conversation.findByIdAndUpdate(conversationId, {
         $set: { [`lastRead.${username}`]: Date.now() },
       });

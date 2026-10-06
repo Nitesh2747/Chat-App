@@ -13,6 +13,7 @@ const conversationSchema = new mongoose.Schema({
     user: String,
     timestamp: Number,
     messageId: mongoose.Schema.Types.ObjectId,
+    status: { type: String, enum: ['sent', 'delivered', 'read'], default: 'sent' },
   },
   lastRead: { type: Map, of: Number, default: {} },
   hiddenFor: { type: [mongoose.Schema.Types.ObjectId], ref: 'User', default: [] },

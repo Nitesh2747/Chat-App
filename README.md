@@ -3,8 +3,8 @@
 **Live demo:** [Chat App](https://chat-app-pw.vercel.app)
 *(Note: the backend is on a free-tier host and may take up to a minute to wake up on first load.)*
 
-![Live Site Demo](./live%20site%20demo.png)
-![Live Site Demo - alternate view](./live%20site%20demo%20-%20alternate%20view.png)
+![Live Site Demo](./live-site-demo.png)
+![Live Site Demo - alternate view](./live-site-demo-alternate-view.png)
 
 A real-time chat application with authentication, DMs, groups, friend requests, and live messaging — built with React, Node/Express, Socket.IO, and MongoDB.
 
