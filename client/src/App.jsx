@@ -251,6 +251,10 @@ function App() {
       }
     }
 
+    function onFriendRequestAccepted({ by }) {
+      alert(`${by} accepted your friend request! You can now start a chat.`);
+    }
+
     function onConversationAdded() {
       getConversations().then(setConversations).catch(console.error);
     }
@@ -299,6 +303,7 @@ function App() {
     socket.on('delivered update', onDeliveredUpdate);
     socket.on('removed from group', onRemovedFromGroup);
     socket.on('conversation added', onConversationAdded);
+    socket.on('friend request accepted', onFriendRequestAccepted);
     socket.on('friend request received', onFriendRequestReceived);
 
     return () => {
@@ -314,6 +319,7 @@ function App() {
       socket.off('delivered update', onDeliveredUpdate);
       socket.off('removed from group', onRemovedFromGroup);
       socket.off('conversation added', onConversationAdded);
+      socket.off('friend request accepted', onFriendRequestAccepted);
       socket.off('friend request received', onFriendRequestReceived);
     };
   }, []);

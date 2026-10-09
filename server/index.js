@@ -25,7 +25,6 @@ export const io = new Server(httpServer, {
 });
 
 app.use(helmet());
-app.use(express.static('public'));
 app.use(express.json({ limit: '50kb' }));
 app.use(cors({ origin: process.env.CLIENT_URL }));
 
@@ -58,10 +57,9 @@ io.use((socket, next) => {
   }
 });
 
-const onlineUsers = {}; // socket.id -> username
+const onlineUsers = {}; // socket.id -> username (used to resolve who's live in a room for delivery status)
 const userSockets = {}; // userId -> Set of socket.id
 const typingByConversation = {}; // conversationId -> Set of usernames
-const uniqueOnline = () => [...new Set(Object.values(onlineUsers))];
 const EDIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 
 export function addUserToRoom(userId, roomId) {
@@ -271,15 +269,14 @@ io.on('connection', (socket) => {
         { _id: { $in: ids }, conversation: conversationId, user: { $ne: username } },
         { $addToSet: { readBy: username, deliveredTo: username } }
       );
-      const convo = await Conversation.findById(conversationId);
-      if (convo?.lastMessage?.messageId?.toString() === undefined) {
-        // no-op guard, convo may lack lastMessage
-      } else if (ids.map(String).includes(convo.lastMessage.messageId?.toString())) {
-        await Conversation.findByIdAndUpdate(conversationId, { $set: { 'lastMessage.status': 'read' } });
-      }
-      await Conversation.findByIdAndUpdate(conversationId, {
-        $set: { [`lastRead.${username}`]: Date.now() },
-      });
+      await Conversation.updateOne(
+        {
+          _id: conversationId,
+          'lastMessage.messageId': { $in: ids },
+          'lastMessage.user': { $ne: username },
+        },
+        { $set: { 'lastMessage.status': 'read' } }
+      );
       io.to(conversationId).emit('read update', { conversationId, ids, reader: username });
     } catch (err) {
       console.error('Failed to mark read:', err);
@@ -295,7 +292,6 @@ io.on('connection', (socket) => {
     userSockets[userId]?.delete(socket.id);
     if (userSockets[userId]?.size === 0)
       delete userSockets[userId];
-    io.emit('online users', uniqueOnline());
     console.log('User disconnected:', username, socket.id);
     Object.entries(typingByConversation).forEach(([conversationId, typers]) => {
       if (typers.has(username)) {
@@ -305,10 +301,9 @@ io.on('connection', (socket) => {
     });
   });
 
-  io.emit('online users', uniqueOnline());
 });
 
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 
 mongoose
   .connect(process.env.MONGO_URI)

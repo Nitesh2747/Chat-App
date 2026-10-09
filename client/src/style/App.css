@@ -111,8 +111,6 @@
   text-align: center;
 }
 
-
-
 /* ---------- Sidebar ---------- */
 .sidebar {
   width: 300px;
@@ -555,11 +553,6 @@
 .chat-status {
   font-size: 0.78rem;
   color: var(--text-muted);
-  margin-left: auto;
-}
-
-.chat-header .chat-status {
-  margin-left: 0;
 }
 
 .no-chat {
@@ -737,18 +730,14 @@
   font-style: italic;
 }
 
+.ticks {
+  margin-left: 5px;
+}
+
 .ticks.read {
   color: #00ff85;
   font-weight: 800;
   text-shadow: 0 0 4px rgba(0, 255, 133, 0.6);
-}
-sn
-.ticks {
-  margin-left: 4px;
-}
-
-.ticks.read {
-  color: #7adba0;
 }
 
 .edit-input {
@@ -800,17 +789,6 @@ sn
 
 .message-input::placeholder {
   color: var(--text-muted);
-}
-
-.input-bar textarea {
-  flex: 1;
-  padding: 11px 16px;
-  border: none;
-  border-radius: 20px;
-  background: var(--bg-panel);
-  color: var(--text);
-  font-size: 0.95rem;
-  outline: none;
 }
 
 .join-card button:disabled {

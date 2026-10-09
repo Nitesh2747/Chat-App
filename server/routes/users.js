@@ -1,5 +1,6 @@
 import express from 'express';
 import User from '../models/User.js';
+import FriendRequest from '../models/FriendRequest.js';
 import requireAuth from '../middleware/requireAuth.js';
 
 const router = express.Router();
@@ -18,7 +19,7 @@ router.get('/search', requireAuth, async (req, res) => {
   try {
     const users = await User.find({
       _id: { $ne: req.user.id },
-      username: { $regex: `^${q}`, $options: 'i' },
+      username: { $regex: `^${escapeRegex(q)}`, $options: 'i' },
     })
       .select('username')
       .limit(10)
@@ -32,6 +33,7 @@ router.get('/search', requireAuth, async (req, res) => {
 
 router.delete('/me', requireAuth, async (req, res) => {
   try {
+    await FriendRequest.deleteMany({ $or: [{ from: req.user.id }, { to: req.user.id }] });
     await User.findByIdAndDelete(req.user.id);
     res.json({ success: true });
   } catch (err) {

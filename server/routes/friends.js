@@ -15,9 +15,9 @@ router.get('/', async (req, res) => {
       $or: [{ from: req.user.id }, { to: req.user.id }],
     }).populate('from to', 'username');
 
-    const friends = accepted.map((r) =>
-      r.from._id.toString() === req.user.id ? r.to : r.from
-    );
+    const friends = accepted
+      .filter((r) => r.from && r.to)
+      .map((r) => (r.from._id.toString() === req.user.id ? r.to : r.from));
     res.json(friends);
   } catch (err) {
     console.error(err);
@@ -29,7 +29,7 @@ router.get('/requests', async (req, res) => {
   try {
     const incoming = await FriendRequest.find({ to: req.user.id, status: 'pending' })
       .populate('from', 'username');
-    res.json(incoming);
+    res.json(incoming.filter((r) => r.from));
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Something went wrong' });

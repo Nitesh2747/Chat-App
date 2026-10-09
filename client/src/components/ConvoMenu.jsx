@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 
 export default function ConvoMenu({ onDeleteChat }) {
     const [open, setOpen] = useState(false);
-    const [pos, setPos] = useState({ top: 0, left: 0 });
+    const [pos, setPos] = useState({ top: 0, right: 0 });
     const triggerRef = useRef(null);
     const menuRef = useRef(null);
 

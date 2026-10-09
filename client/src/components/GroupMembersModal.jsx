@@ -10,7 +10,7 @@ export default function GroupMembersModal({ convo, username, myId, onClose, onMe
 
   function handleSearchChange(val) {
     setQuery(val);
-    if (val.trim().length < 2) return setResults([]);
+    if (val.trim().length < 3) return setResults([]);
     searchUsers(val.trim())
       .then((users) => users.filter((u) => !convo.members.some((m) => m._id === u._id)))
       .then(setResults)

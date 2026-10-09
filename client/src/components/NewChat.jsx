@@ -17,7 +17,7 @@ export default function NewChat({ onCreated, onClose }) {
   }, []);
 
   useEffect(() => {
-    if (query.trim().length < 2) {
+    if (query.trim().length < 3) {
       setResults([]);
       return;
     }
@@ -121,7 +121,7 @@ export default function NewChat({ onCreated, onClose }) {
               </li>
             );
           })}
-          {query.trim().length >= 2 && results.length === 0 && (
+          {query.trim().length >= 3 && results.length === 0 && (
             <p className="modal-hint">No users found</p>
           )}
         </ul>
