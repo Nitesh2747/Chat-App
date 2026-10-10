@@ -85,3 +85,7 @@ export function removeGroupMember(conversationId, userId) {
 export function deleteChat(conversationId) {
   return apiFetch(`/conversations/${conversationId}`, { method: 'DELETE' });
 }
+
+export function getContactInfo(userId) {
+  return apiFetch(`/users/${userId}`);
+}

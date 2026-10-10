@@ -6,13 +6,16 @@ import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import { Server } from 'socket.io';
 import { createServer } from 'http';
+import rateLimit from 'express-rate-limit';
+
+import User from './models/User.js';
 import Message from './models/Message.js';
 import authRouter from './routes/auth.js';
-import rateLimit from 'express-rate-limit';
 import usersRouter from './routes/users.js';
 import friendsRouter from './routes/friends.js';
 import messagesRouter from './routes/messages.js';
 import Conversation from './models/Conversation.js';
+import FriendRequest from './models/FriendRequest.js';
 import conversationsRouter from './routes/conversations.js';
 
 const app = express();
@@ -86,6 +89,29 @@ export function emitToUser(userId, event, payload) {
   socketIds.forEach((id) => io.sockets.sockets.get(id)?.emit(event, payload));
 }
 
+const offlineTimers = {}; // userId -> pending "went offline" timeout
+const OFFLINE_GRACE_MS = 5000; // ride out page refreshes and brief reconnects
+
+export function isUserOnline(userId) {
+  return (userSockets[userId]?.size || 0) > 0 || Boolean(offlineTimers[userId]);
+}
+
+// Presence is only shared with accepted friends.
+async function notifyFriendsPresence(userId, payload) {
+  try {
+    const accepted = await FriendRequest.find({
+      status: 'accepted',
+      $or: [{ from: userId }, { to: userId }],
+    }).select('from to');
+    accepted.forEach((r) => {
+      const other = r.from.toString() === userId ? r.to : r.from;
+      emitToUser(other.toString(), 'presence', payload);
+    });
+  } catch (err) {
+    console.error('Failed to broadcast presence:', err);
+  }
+}
+
 function getOnlineMembersInRoom(conversationId, excludeUsername) {
   const socketIds = io.sockets.adapter.rooms.get(conversationId) || new Set();
   const usernames = new Set();
@@ -100,9 +126,18 @@ io.on('connection', (socket) => {
   const username = socket.user.username;
   onlineUsers[socket.id] = username;
   const userId = socket.user.id;
+  const hadPendingOffline = Boolean(offlineTimers[userId]);
+  if (hadPendingOffline) {
+    clearTimeout(offlineTimers[userId]);
+    delete offlineTimers[userId];
+  }
+  const wasOnline = (userSockets[userId]?.size || 0) > 0;
   if (!userSockets[userId])
     userSockets[userId] = new Set();
   userSockets[userId].add(socket.id);
+  if (!wasOnline && !hadPendingOffline) {
+    notifyFriendsPresence(userId, { userId, online: true });
+  }
   console.log('User connected:', username, socket.id);
 
   const roomsReady = Conversation.find({ members: socket.user.id })
@@ -152,7 +187,7 @@ io.on('connection', (socket) => {
       const saved = await Message.create({
         conversation: conversationId,
         user: username,
-        text,
+        text: text.trim(),
         deliveredTo,
       });
       await Conversation.findByIdAndUpdate(conversationId, {
@@ -292,6 +327,19 @@ io.on('connection', (socket) => {
     userSockets[userId]?.delete(socket.id);
     if (userSockets[userId]?.size === 0)
       delete userSockets[userId];
+    if (!userSockets[userId]) {
+      const disconnectedAt = new Date();
+      clearTimeout(offlineTimers[userId]);
+      offlineTimers[userId] = setTimeout(async () => {
+        delete offlineTimers[userId];
+        try {
+          await User.findByIdAndUpdate(userId, { lastSeen: disconnectedAt });
+        } catch (err) {
+          console.error('Failed to save last seen:', err);
+        }
+        notifyFriendsPresence(userId, { userId, online: false, lastSeen: disconnectedAt });
+      }, OFFLINE_GRACE_MS);
+    }
     console.log('User disconnected:', username, socket.id);
     Object.entries(typingByConversation).forEach(([conversationId, typers]) => {
       if (typers.has(username)) {

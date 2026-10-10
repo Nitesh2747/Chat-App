@@ -1,22 +1,24 @@
-import { useEffect, useRef, useState } from 'react';
 import './style/App.css';
 import Auth from './components/Auth.jsx';
 import { socket } from './data/socket.js';
-import { canEdit } from './utils/helpers.js';
 import NewChat from './components/NewChat.jsx';
 import Sidebar from './components/Sidebar.jsx';
+import { useEffect, useRef, useState } from 'react';
 import ChatHeader from './components/ChatHeader.jsx';
 import MessageList from './components/MessageList.jsx';
 import MessageInput from './components/MessageInput.jsx';
+import { canEdit, convoLabel } from './utils/helpers.js';
+import ContactInfoModal from './components/ContactInfoModal.jsx';
 import GroupMembersModal from './components/GroupMembersModal.jsx';
 import FriendRequestsModal from './components/FriendRequestsModal.jsx';
-import { deleteAccount, deleteChat, getConversations, getMessages, getFriendRequests } from './data/api.js';
+import { deleteAccount, deleteChat, getConversations, getMessages, getFriendRequests, getContactInfo } from './data/api.js';
 
 function App() {
   const inputRef = useRef(null);
   const bottomRef = useRef(null);
   const editingIdRef = useRef(null);
   const editInputRef = useRef(null);
+  const dmOtherIdRef = useRef(null);
   const activeConvoRef = useRef(null);
   const typingTimeoutRef = useRef(null);
 
@@ -26,11 +28,13 @@ function App() {
   const [editingId, setEditingId] = useState(null);
   const [typingUsers, setTypingUsers] = useState([]);
   const [activeConvo, setActiveConvo] = useState(null);
+  const [contactInfo, setContactInfo] = useState(null);
   const [showNewChat, setShowNewChat] = useState(false);
   const [showMembers, setShowMembers] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [conversations, setConversations] = useState([]);
   const [unreadMarker, setUnreadMarker] = useState(null);
+  const [showContactInfo, setShowContactInfo] = useState(false);
   const [pendingRequestCount, setPendingRequestCount] = useState(0);
   const [showFriendRequests, setShowFriendRequests] = useState(false);
 
@@ -39,6 +43,11 @@ function App() {
     return saved ? JSON.parse(saved) : null;
   });
   const username = auth?.user.username;
+  const dmOther =
+    activeConvo && !activeConvo.isGroup
+      ? activeConvo.members.find((m) => m && m.username !== username)
+      : null;
+  const dmOtherId = dmOther?._id;
 
   useEffect(() => {
     if (!auth) return;
@@ -56,6 +65,26 @@ function App() {
   useEffect(() => {
     editingIdRef.current = editingId;
   }, [editingId]);
+
+  useEffect(() => {
+    dmOtherIdRef.current = dmOtherId;
+  }, [dmOtherId]);
+
+  useEffect(() => {
+    setShowContactInfo(false);
+    setContactInfo(null);
+    if (!dmOtherId) return;
+
+    let cancelled = false;
+    getContactInfo(dmOtherId)
+      .then((info) => {
+        if (!cancelled) setContactInfo(info);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [dmOtherId]);
 
   useEffect(() => {
     if (!auth || !activeConvo) return;
@@ -251,6 +280,23 @@ function App() {
       }
     }
 
+    function onPresence({ userId, online, lastSeen }) {
+      if (dmOtherIdRef.current !== userId) return;
+      setContactInfo((prev) =>
+        prev ? { ...prev, online, ...(lastSeen ? { lastSeen } : {}) } : prev
+      );
+    }
+
+    function onReconnect() {
+      const id = dmOtherIdRef.current;
+      if (!id) return;
+      getContactInfo(id)
+        .then((info) => {
+          if (dmOtherIdRef.current === id) setContactInfo(info);
+        })
+        .catch(() => {});
+    }
+
     function onFriendRequestAccepted({ by }) {
       alert(`${by} accepted your friend request! You can now start a chat.`);
     }
@@ -292,6 +338,8 @@ function App() {
     }
 
     socket.on('typing', onTyping);
+    socket.on('connect', onReconnect);
+    socket.on('presence', onPresence);
     socket.on('edit error', onEditError);
     socket.on('read update', onReadUpdate);
     socket.on('stop typing', onStopTyping);
@@ -308,6 +356,8 @@ function App() {
 
     return () => {
       socket.off('typing', onTyping);
+      socket.off('presence', onPresence);
+      socket.off('connect', onReconnect);
       socket.off('edit error', onEditError);
       socket.off('read update', onReadUpdate);
       socket.off('stop typing', onStopTyping);
@@ -334,6 +384,15 @@ function App() {
     setMessages([]);
     setTypingUsers([]);
     setInput('');
+    setActiveConvo(null);
+    setConversations([]);
+    setUnreadMarker(null);
+    setEditingId(null);
+    setPendingRequestCount(0);
+    setSidebarOpen(false);
+    setShowNewChat(false);
+    setShowMembers(false);
+    setShowFriendRequests(false);
     setAuth(null);
   }
 
@@ -442,7 +501,9 @@ function App() {
           username={username}
           typingUsers={typingUsers}
           onToggleSidebar={() => setSidebarOpen(true)}
+          contactInfo={contactInfo}
           onShowMembers={() => setShowMembers(true)}
+          onShowContactInfo={() => setShowContactInfo(true)}
         />
 
         {activeConvo ? (
@@ -481,6 +542,16 @@ function App() {
           onMemberRemoved={(id) =>
             setActiveConvo((c) => ({ ...c, members: c.members.filter((m) => m._id !== id) }))
           }
+        />
+      )}
+
+      {showContactInfo && activeConvo && !activeConvo.isGroup && (
+        <ContactInfoModal
+          name={convoLabel(activeConvo, username)}
+          accountMissing={!dmOther}
+          info={contactInfo}
+          onClose={() => setShowContactInfo(false)}
+          onDeleteChat={() => handleDeleteChat(activeConvo._id)}
         />
       )}
 

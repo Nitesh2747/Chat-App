@@ -1,7 +1,8 @@
+import { isMobile } from '../utils/helpers';
+
 export default function MessageInput({ input, onChange, onSubmit, inputRef }) {
   function handleKeyDown(e) {
-    const isMobile = window.innerWidth <= 700;
-    if (e.key === 'Enter' && !e.shiftKey && !isMobile) {
+    if (e.key === 'Enter' && !e.shiftKey && !isMobile()) {
       e.preventDefault();
       onSubmit(e);
     }

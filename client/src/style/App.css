@@ -555,6 +555,10 @@
   color: var(--text-muted);
 }
 
+.chat-status.online {
+  color: var(--accent-green);
+}
+
 .no-chat {
   flex: 1;
   display: grid;
@@ -660,6 +664,7 @@
   font-size: 0.95rem;
   line-height: 1.4;
   cursor: default;
+  white-space: pre-wrap;
 }
 
 .mine .msg-text {
@@ -753,6 +758,36 @@
   resize: none;
   overflow: hidden;
   line-height: 1.4;
+}
+
+.edit-wrap {
+  width: 100%;
+}
+
+.edit-actions {
+  display: none;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.edit-actions button {
+  border: none;
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.edit-cancel {
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--text-on-accent);
+}
+
+.edit-save {
+  background: #fff;
+  color: var(--accent);
 }
 
 /* ---------- Input bar ---------- */
@@ -981,6 +1016,10 @@
     display: flex;
   }
 
+  .edit-actions {
+    display: flex;
+  }
+
   .modal {
     width: 92vw;
     max-height: 85vh;
@@ -1032,4 +1071,110 @@
   .msg {
     max-width: 85%;
   }
+}
+
+/* info icon */
+.header-info-btn {
+  margin-left: auto;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.header-info-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+}
+
+/* contact info modal */
+.contact-modal {
+  align-items: center;
+  text-align: center;
+  overflow-y: auto;
+}
+
+.contact-modal .modal-header {
+  width: 100%;
+}
+
+.contact-avatar-wrap {
+  position: relative;
+  width: 84px;
+  height: 84px;
+}
+
+.contact-avatar {
+  width: 84px;
+  height: 84px;
+  font-size: 2rem;
+}
+
+.presence-dot {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent-green);
+  border: 3px solid var(--bg-panel);
+}
+
+.contact-name {
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+.contact-status {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.contact-status.online {
+  color: var(--accent-green);
+}
+
+.contact-section {
+  width: 100%;
+  text-align: left;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 10px;
+}
+
+.contact-section h4 {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.contact-row {
+  font-size: 0.9rem;
+}
+
+.contact-muted {
+  color: var(--text-muted);
+}
+
+.contact-groups {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.contact-delete {
+  width: 100%;
+  padding: 10px;
+  margin-top: 6px;
+  font-size: 0.9rem;
 }

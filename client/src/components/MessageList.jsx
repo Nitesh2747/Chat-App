@@ -1,6 +1,6 @@
 import { Fragment } from 'react';
 import MessageMenu from './MessageMenu.jsx';
-import { avatarColor, canEdit } from '../utils/helpers';
+import { avatarColor, canEdit, isMobile } from '../utils/helpers';
 
 export default function MessageList({
   messages,
@@ -63,21 +63,33 @@ export default function MessageList({
                 {msg.deleted ? (
                   <div className="msg-text deleted-text">This message was deleted</div>
                 ) : editingId === msg._id ? (
-                  <textarea
-                    ref={editInputRef}
-                    className="edit-input"
-                    value={editText}
-                    onChange={(e) => onEditTextChange(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        onSubmitEdit(msg);
-                      }
-                      if (e.key === 'Escape') onCancelEdit();
-                    }}
-                    onBlur={() => onSubmitEdit(msg)}
-                    rows={1}
-                  />
+                  <div className="edit-wrap">
+                    <textarea
+                      ref={editInputRef}
+                      className="edit-input"
+                      value={editText}
+                      onChange={(e) => onEditTextChange(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey && !isMobile()) {
+                          e.preventDefault();
+                          onSubmitEdit(msg);
+                        }
+                        if (e.key === 'Escape') onCancelEdit();
+                      }}
+                      onBlur={() => {
+                        if (!isMobile()) onSubmitEdit(msg);
+                      }}
+                      rows={1}
+                    />
+                    <div className="edit-actions">
+                      <button type="button" className="edit-cancel" onClick={() => onCancelEdit()}>
+                        Cancel
+                      </button>
+                      <button type="button" className="edit-save" onClick={() => onSubmitEdit(msg)}>
+                        Save
+                      </button>
+                    </div>
+                  </div>
                 ) : (
                   <div className="msg-text" onDoubleClick={() => onStartEdit(msg)}>
                     {msg.text}
