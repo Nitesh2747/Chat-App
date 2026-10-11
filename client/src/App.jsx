@@ -16,7 +16,6 @@ import { deleteAccount, deleteChat, getConversations, getMessages, getFriendRequ
 function App() {
   const inputRef = useRef(null);
   const bottomRef = useRef(null);
-  const editingIdRef = useRef(null);
   const editInputRef = useRef(null);
   const dmOtherIdRef = useRef(null);
   const activeConvoRef = useRef(null);
@@ -26,6 +25,7 @@ function App() {
   const [messages, setMessages] = useState([]);
   const [editText, setEditText] = useState('');
   const [editingId, setEditingId] = useState(null);
+  const [replyingTo, setReplyingTo] = useState(null);
   const [typingUsers, setTypingUsers] = useState([]);
   const [activeConvo, setActiveConvo] = useState(null);
   const [contactInfo, setContactInfo] = useState(null);
@@ -54,17 +54,14 @@ function App() {
     getFriendRequests().then((r) => setPendingRequestCount(r.length)).catch(() => { });
   }, [auth]);
 
+  const lastMessageId = messages[messages.length - 1]?._id;
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [lastMessageId]);
 
   useEffect(() => {
     activeConvoRef.current = activeConvo;
   }, [activeConvo]);
-
-  useEffect(() => {
-    editingIdRef.current = editingId;
-  }, [editingId]);
 
   useEffect(() => {
     dmOtherIdRef.current = dmOtherId;
@@ -80,7 +77,7 @@ function App() {
       .then((info) => {
         if (!cancelled) setContactInfo(info);
       })
-      .catch(() => {});
+      .catch(() => { });
     return () => {
       cancelled = true;
     };
@@ -115,6 +112,7 @@ function App() {
     setMessages([]);
     setTypingUsers([]);
     setUnreadMarker(null);
+    setReplyingTo(null);
 
     if (window.innerWidth > 700) inputRef.current?.focus();
 
@@ -255,7 +253,14 @@ function App() {
 
     function onMessageEdited({ conversationId, messageId, text }) {
       if (activeConvoRef.current?._id === conversationId) {
-        setMessages((prev) => prev.map((m) => (m._id === messageId ? { ...m, text, edited: true } : m)));
+        setMessages((prev) =>
+          prev.map((m) => {
+            if (m._id === messageId) return { ...m, text, edited: true };
+            if (m.replyTo?._id === messageId) return { ...m, replyTo: { ...m.replyTo, text } };
+            return m;
+          })
+        );
+        setReplyingTo((prev) => (prev?._id === messageId ? { ...prev, text } : prev));
       }
       setConversations((prev) =>
         prev.map((c) =>
@@ -267,17 +272,32 @@ function App() {
     }
 
     function onMessageDeleted({ conversationId, messageId }) {
-      if (activeConvoRef.current?._id !== conversationId) return;
-      setMessages((prev) =>
-        prev.map((m) => (m._id === messageId ? { ...m, text: '', deleted: true } : m))
+      if (activeConvoRef.current?._id === conversationId) {
+        setReplyingTo((prev) => (prev?._id === messageId ? null : prev));
+        setMessages((prev) =>
+          prev.map((m) => {
+            if (m._id === messageId) return { ...m, text: '', deleted: true, reactions: [], replyTo: null };
+            if (m.replyTo?._id === messageId) return { ...m, replyTo: { ...m.replyTo, text: '', deleted: true } };
+            return m;
+          })
+        );
+      }
+      setConversations((prev) =>
+        prev.map((c) =>
+          c._id === conversationId && c.lastMessage?.messageId === messageId
+            ? { ...c, lastMessage: { ...c.lastMessage, text: 'This message was deleted' } }
+            : c
+        )
       );
     }
 
-    function onEditError({ messageId, error }) {
-      if (editingIdRef.current === messageId) {
-        alert(error);
-        cancelEdit();
-      }
+    function onReactionsUpdate({ conversationId, messageId, reactions }) {
+      if (activeConvoRef.current?._id !== conversationId) return;
+      setMessages((prev) => prev.map((m) => (m._id === messageId ? { ...m, reactions } : m)));
+    }
+
+    function onEditError({ error }) {
+      alert(error);
     }
 
     function onPresence({ userId, online, lastSeen }) {
@@ -294,7 +314,7 @@ function App() {
         .then((info) => {
           if (dmOtherIdRef.current === id) setContactInfo(info);
         })
-        .catch(() => {});
+        .catch(() => { });
     }
 
     function onFriendRequestAccepted({ by }) {
@@ -348,6 +368,7 @@ function App() {
     socket.on('member removed', onMemberRemoved);
     socket.on('message edited', onMessageEdited);
     socket.on('message deleted', onMessageDeleted);
+    socket.on('reactions update', onReactionsUpdate);
     socket.on('delivered update', onDeliveredUpdate);
     socket.on('removed from group', onRemovedFromGroup);
     socket.on('conversation added', onConversationAdded);
@@ -366,6 +387,7 @@ function App() {
       socket.off('member removed', onMemberRemoved);
       socket.off('message edited', onMessageEdited);
       socket.off('message deleted', onMessageDeleted);
+      socket.off('reactions update', onReactionsUpdate);
       socket.off('delivered update', onDeliveredUpdate);
       socket.off('removed from group', onRemovedFromGroup);
       socket.off('conversation added', onConversationAdded);
@@ -388,6 +410,7 @@ function App() {
     setConversations([]);
     setUnreadMarker(null);
     setEditingId(null);
+    setReplyingTo(null);
     setPendingRequestCount(0);
     setSidebarOpen(false);
     setShowNewChat(false);
@@ -415,10 +438,15 @@ function App() {
   function handleSubmit(e) {
     e.preventDefault();
     if (input.trim() && activeConvo) {
-      socket.emit('chat message', { conversationId: activeConvo._id, text: input });
+      socket.emit('chat message', {
+        conversationId: activeConvo._id,
+        text: input,
+        replyTo: replyingTo?._id,
+      });
       clearTimeout(typingTimeoutRef.current);
       socket.emit('stop typing', activeConvo._id);
       setInput('');
+      setReplyingTo(null);
     }
   }
 
@@ -452,6 +480,15 @@ function App() {
   function deleteMessage(msg) {
     if (!window.confirm('Delete this message for everyone?')) return;
     socket.emit('delete message', { conversationId: activeConvo._id, messageId: msg._id });
+  }
+
+  function startReply(msg) {
+    setReplyingTo(msg);
+    inputRef.current?.focus();
+  }
+
+  function reactToMessage(msg, emoji) {
+    socket.emit('react message', { conversationId: activeConvo._id, messageId: msg._id, emoji });
   }
 
   async function handleDeleteAccount() {
@@ -521,8 +558,18 @@ function App() {
               onSubmitEdit={submitEdit}
               onCancelEdit={cancelEdit}
               onDelete={deleteMessage}
+              onReply={startReply}
+              onReact={reactToMessage}
             />
-            <MessageInput input={input} onChange={handleInputChange} onSubmit={handleSubmit} inputRef={inputRef} />
+            <MessageInput
+              input={input}
+              onChange={handleInputChange}
+              onSubmit={handleSubmit}
+              inputRef={inputRef}
+              username={username}
+              replyingTo={replyingTo}
+              onCancelReply={() => setReplyingTo(null)}
+            />
           </>
         ) : (
           <div className="no-chat"><p>Select a conversation to start chatting</p></div>

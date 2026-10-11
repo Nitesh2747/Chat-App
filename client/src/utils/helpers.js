@@ -14,6 +14,9 @@ export function convoLabel(convo, myUsername) {
 
 export const EDIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 
+// Must match REACTION_EMOJIS in server/index.js (same characters, same order). 
+export const REACTION_EMOJIS = ['😭', '💀', '❤️', '👍', '😂', '😮', '😢'];
+
 export function canEdit(msg, username) {
   return msg.user === username && Date.now() - msg.timestamp <= EDIT_WINDOW_MS;
 }

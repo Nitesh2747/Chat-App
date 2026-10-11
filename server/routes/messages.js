@@ -21,9 +21,10 @@ router.get('/:conversationId', requireAuth, async (req, res) => {
     if (!convo) return res.status(403).json({ error: 'Not a member of this conversation' });
 
     const messages = await Message.find({ conversation: conversationId })
-      .sort({ timestamp: 1 })
-      .limit(100);
-    res.json(messages);
+      .sort({ timestamp: -1 })
+      .limit(100)
+      .populate('replyTo', 'user text deleted');
+    res.json(messages.reverse());
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Something went wrong' });

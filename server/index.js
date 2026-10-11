@@ -64,6 +64,7 @@ const onlineUsers = {}; // socket.id -> username (used to resolve who's live in 
 const userSockets = {}; // userId -> Set of socket.id
 const typingByConversation = {}; // conversationId -> Set of usernames
 const EDIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const REACTION_EMOJIS = ['😭', '💀', '❤️', '👍', '😂', '😮', '😢'];
 
 export function addUserToRoom(userId, roomId) {
   const socketIds = userSockets[userId];
@@ -178,17 +179,32 @@ io.on('connection', (socket) => {
     })
     .catch((err) => console.error('Failed to join rooms:', err));
 
-  socket.on('chat message', async ({ conversationId, text }) => {
+  socket.on('chat message', async ({ conversationId, text, replyTo }) => {
     await roomsReady;
     if (!text?.trim() || text.length > 5000 || !socket.rooms.has(conversationId)) return;
 
     try {
+      // A reply must point at a real, visible message in THIS conversation.
+      let replyToId = null;
+      if (replyTo) {
+        if (!mongoose.isValidObjectId(replyTo)) return;
+        const original = await Message.findOne({
+          _id: replyTo,
+          conversation: conversationId,
+          system: false,
+          deleted: false,
+        }).select('_id');
+        if (!original) return;
+        replyToId = original._id;
+      }
+
       const deliveredTo = getOnlineMembersInRoom(conversationId, username);
       const saved = await Message.create({
         conversation: conversationId,
         user: username,
         text: text.trim(),
         deliveredTo,
+        replyTo: replyToId,
       });
       await Conversation.findByIdAndUpdate(conversationId, {
         $set: {
@@ -203,6 +219,7 @@ io.on('connection', (socket) => {
           hiddenFor: [],
         },
       });
+      await saved.populate('replyTo', 'user text deleted');
       io.to(conversationId).emit('chat message', saved);
     } catch (err) {
       console.error('Failed to save message:', err);
@@ -293,6 +310,58 @@ io.on('connection', (socket) => {
       }
     } catch (err) {
       console.error('Failed to delete message:', err);
+    }
+  });
+
+  socket.on('react message', async ({ conversationId, messageId, emoji }) => {
+    await roomsReady;
+    if (!socket.rooms.has(conversationId)) return;
+    if (!REACTION_EMOJIS.includes(emoji) || !mongoose.isValidObjectId(messageId)) return;
+
+    try {
+      // One atomic update on the server: drop my old reaction, and add the new
+      // one unless I tapped the same emoji again (then it's a plain removal).
+      const updated = await Message.findOneAndUpdate(
+        { _id: messageId, conversation: conversationId, system: false, deleted: false },
+        [
+          {
+            $set: {
+              reactions: {
+                $let: {
+                  vars: {
+                    all: { $ifNull: ['$reactions', []] },
+                  },
+                  in: {
+                    $let: {
+                      vars: {
+                        mine: { $filter: { input: '$$all', cond: { $eq: ['$$this.user', username] } } },
+                        others: { $filter: { input: '$$all', cond: { $ne: ['$$this.user', username] } } },
+                      },
+                      in: {
+                        $cond: [
+                          { $in: [emoji, { $map: { input: '$$mine', in: '$$this.emoji' } }] },
+                          '$$others',
+                          { $concatArrays: ['$$others', [{ user: username, emoji }]] },
+                        ],
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        ],
+        { new: true, updatePipeline: true }
+      );
+      if (!updated) return; // not found, deleted, system, or wrong conversation
+
+      io.to(conversationId).emit('reactions update', {
+        conversationId,
+        messageId: updated._id,
+        reactions: updated.reactions.map((r) => ({ user: r.user, emoji: r.emoji })),
+      });
+    } catch (err) {
+      console.error('Failed to react:', err);
     }
   });
 

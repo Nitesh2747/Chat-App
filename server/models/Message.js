@@ -10,13 +10,19 @@ const messageSchema = new mongoose.Schema({
   edited: { type: Boolean, default: false },
   system: { type: Boolean, default: false },
   deleted: { type: Boolean, default: false },
+  replyTo: { type: mongoose.Schema.Types.ObjectId, ref: 'Message', default: null },
+  reactions: { type: [{ _id: false, user: String, emoji: String }], default: [] },
 });
 
 messageSchema.index({ conversation: 1, timestamp: 1 });
 
 messageSchema.set('toJSON', {
   transform: (doc, ret) => {
-    if (ret.deleted) ret.text = '';
+    if (ret.deleted) {
+      ret.text = '';
+      ret.reactions = [];
+      ret.replyTo = null;
+    }
     return ret;
   },
 });
