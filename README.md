@@ -6,10 +6,32 @@
 ![Live Site Demo](./live-site-demo.png)
 ![Live Site Demo - alternate view](./live-site-demo-alternate-view.png)
 
-A real-time chat application with authentication, DMs, groups, friend requests, and live messaging — built with React, Node/Express, Socket.IO, and MongoDB.
+A real-time chat application with authentication, DMs, groups, friend requests, replies, emoji reactions, and live messaging — built with React, Node/Express, Socket.IO, and MongoDB.
 
 - [`/client`](./client) — React frontend ([setup instructions](./client/README.md))
 - [`/server`](./server) — Express + Socket.IO backend ([setup instructions](./server/README.md))
+
+## Features
+
+- **Accounts:** signup/login with JWT sessions and bcrypt-hashed passwords
+- **Chats:** one-to-one DMs (gated by accepted friend requests) and group chats with member management
+- **Live messaging:** instant delivery over Socket.IO, typing indicators, online status and "last seen", sent / delivered / read ticks, unread badges and sidebar previews
+- **Replies:** reply to any message; the quote updates live if the original is edited or deleted, and tapping it jumps to the original
+- **Reactions:** react with one of six emoji (one reaction per person per message), visible to everyone in the chat in real time
+- **Message actions:** edit (15-minute window) and delete for everyone, from a per-message ⋮ menu
+- **Mobile friendly:** responsive layout with a sidebar drawer and swipe-right-to-reply
+- **Contact info:** friend profile with last seen and shared groups
+- **Housekeeping:** delete chat (hide for yourself) and delete account
+
+## Tech stack
+
+| Layer | Tools |
+| --- | --- |
+| Frontend | React (Vite), Socket.IO client, plain CSS |
+| Backend | Node.js, Express, Socket.IO |
+| Database | MongoDB (Mongoose) |
+| Security | JWT, bcrypt, Helmet, rate limiting, CORS locked to one origin |
+| Hosting | Vercel (frontend), Render (backend), MongoDB Atlas |
 
 ## Quick start
 
@@ -23,5 +45,9 @@ A real-time chat application with authentication, DMs, groups, friend requests, 
 - **Message editing has a 15-minute window** — matching WhatsApp's convention; messages older than that can only be deleted, not edited.
 - **No "delete for me" option** — message deletion is permanent and visible to everyone in the conversation, by design.
 - **Deleted accounts aren't fully erased from history** — a deleted user's past messages remain visible (shown under their old username) in any conversation that isn't itself deleted, since removing them would corrupt other members' chat history. DMs with a deleted user can be removed entirely via "Delete chat."
-- **Free-tier hosting cold starts** — the backend (Render free tier) sleeps after ~15 minutes of inactivity; the first request after that can take up to a minute to respond. The login screen detects this and shows a "waking up" message rather than appearing frozen.
+- **Only 100 messages load per conversation** — there is no pagination or infinite scroll yet. A reply to a message older than that still shows its quote, but tapping it can't jump to the original.
+- **Reactions use a fixed set of six emoji** — there is no full emoji picker, and the message composer has no emoji button yet.
+- **Text only** — no file, photo, or sticker sharing.
 - **No group invite links yet** — new members are added directly by any existing group member; link-based invites are a possible future addition.
+- **No automated tests** — features have been verified by hand.
+- **Free-tier hosting cold starts** — the backend (Render free tier) sleeps after ~15 minutes of inactivity; the first request after that can take up to a minute to respond. The login screen detects this and shows a "waking up" message rather than appearing frozen.
