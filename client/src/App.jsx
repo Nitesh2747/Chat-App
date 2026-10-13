@@ -458,6 +458,18 @@ function App() {
     typingTimeoutRef.current = setTimeout(() => socket.emit('stop typing', activeConvo._id), 1000);
   }
 
+  function insertEmoji(emoji) {
+    const el = inputRef.current;
+    const start = el?.selectionStart ?? input.length;
+    const end = el?.selectionEnd ?? input.length;
+    setInput(input.slice(0, start) + emoji + input.slice(end));
+    // put the cursor right after the emoji once React has re-rendered
+    requestAnimationFrame(() => {
+      el?.focus();
+      el?.setSelectionRange(start + emoji.length, start + emoji.length);
+    });
+  }
+
   function startEdit(msg) {
     if (!canEdit(msg, username)) return;
     setEditingId(msg._id);
@@ -562,6 +574,7 @@ function App() {
               onReact={reactToMessage}
             />
             <MessageInput
+              key={activeConvo._id}
               input={input}
               onChange={handleInputChange}
               onSubmit={handleSubmit}
@@ -569,6 +582,7 @@ function App() {
               username={username}
               replyingTo={replyingTo}
               onCancelReply={() => setReplyingTo(null)}
+              onEmoji={insertEmoji}
             />
           </>
         ) : (

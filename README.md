@@ -17,6 +17,7 @@ A real-time chat application with authentication, DMs, groups, friend requests, 
 - **Chats:** one-to-one DMs (gated by accepted friend requests) and group chats with member management
 - **Live messaging:** instant delivery over Socket.IO, typing indicators, online status and "last seen", sent / delivered / read ticks, unread badges and sidebar previews
 - **Replies:** reply to any message; the quote updates live if the original is edited or deleted, and tapping it jumps to the original
+- **Emoji picker:** scrollable category picker in the composer, with a "recently used" section
 - **Reactions:** react with one of six emoji (one reaction per person per message), visible to everyone in the chat in real time
 - **Message actions:** edit (15-minute window) and delete for everyone, from a per-message ⋮ menu
 - **Mobile friendly:** responsive layout with a sidebar drawer and swipe-right-to-reply
@@ -46,7 +47,7 @@ A real-time chat application with authentication, DMs, groups, friend requests, 
 - **No "delete for me" option** — message deletion is permanent and visible to everyone in the conversation, by design.
 - **Deleted accounts aren't fully erased from history** — a deleted user's past messages remain visible (shown under their old username) in any conversation that isn't itself deleted, since removing them would corrupt other members' chat history. DMs with a deleted user can be removed entirely via "Delete chat."
 - **Only 100 messages load per conversation** — there is no pagination or infinite scroll yet. A reply to a message older than that still shows its quote, but tapping it can't jump to the original.
-- **Reactions use a fixed set of six emoji** — there is no full emoji picker, and the message composer has no emoji button yet.
+- **Reactions use a fixed set of six emoji** — the composer has an emoji picker for messages, but reactions deliberately stay limited to the fixed set.
 - **Text only** — no file, photo, or sticker sharing.
 - **No group invite links yet** — new members are added directly by any existing group member; link-based invites are a possible future addition.
 - **No automated tests** — features have been verified by hand.

@@ -13,6 +13,7 @@ React client for a real-time WhatsApp/Discord-inspired chat app.
 - Typing indicators, online status and last seen, delivered/read receipts, unread badges and message previews
 - Multi-line messages (Shift+Enter on desktop, Enter inserts a new line on mobile)
 - Replies: quoted block in the bubble, "Replying to…" bar above the composer (✕ or Esc cancels), tap a quote to jump to and highlight the original; quotes update live when the original is edited or deleted
+- Composer emoji picker: scrollable categories with a tab bar that follows your scroll, and a "recently used" section saved in your browser
 - Emoji reactions: pick from the ⋮ menu, shown as chips under the message; tap a chip to toggle your reaction
 - Message editing (15-minute window) and permanent deletion, both reflected live in the chat and the sidebar preview
 - Per-message ⋮ menu: Reply and React on every message, Edit and Delete on your own
@@ -56,11 +57,13 @@ The backend (see `../server/README.md`) must be running and reachable at `VITE_A
 
 ```
 src/
-  components/   UI components: Auth, Sidebar, ChatHeader, MessageList, MessageInput,
-                MessageMenu, ConvoMenu, UserMenu, NewChat, FriendRequestsModal,
-                GroupMembersModal, ContactInfoModal
-  data/         api.js (REST calls), socket.js (Socket.IO client instance)
-  utils/        shared helpers (avatarColor, convoLabel, canEdit, isMobile, REACTION_EMOJIS)
-  style/        index.css (theme variables, reset, base styles) and App.css (styles for all components)
-  App.jsx       top-level state, socket event handlers, and layout
+├── components/   UI components
+│   ├── Auth, Sidebar, ChatHeader
+│   ├── MessageList, MessageInput, MessageMenu
+│   ├── ConvoMenu, UserMenu, NewChat
+│   └── FriendRequestsModal, GroupMembersModal, ContactInfoModal
+├── data/         api.js (REST calls), socket.js (Socket.IO client)
+├── utils/        helpers.js (shared helpers, reaction emoji), emojis.js (picker)
+├── style/        index.css (theme, reset), App.css (component styles)
+└── App.jsx       top-level state, socket handlers, layout
 ```
