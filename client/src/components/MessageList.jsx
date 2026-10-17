@@ -200,10 +200,20 @@ export default function MessageList({
                       rows={1}
                     />
                     <div className="edit-actions">
-                      <button type="button" className="edit-cancel" onClick={() => onCancelEdit()}>
+                      <button
+                        type="button"
+                        className="edit-cancel"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => onCancelEdit()}
+                      >
                         Cancel
                       </button>
-                      <button type="button" className="edit-save" onClick={() => onSubmitEdit(msg)}>
+                      <button
+                        type="button"
+                        className="edit-save"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => onSubmitEdit(msg)}
+                      >
                         Save
                       </button>
                     </div>

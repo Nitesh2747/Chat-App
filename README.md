@@ -26,19 +26,31 @@ A real-time chat application with authentication, DMs, groups, friend requests, 
 
 ## Tech stack
 
-| Layer | Tools |
-| --- | --- |
-| Frontend | React (Vite), Socket.IO client, plain CSS |
-| Backend | Node.js, Express, Socket.IO |
-| Database | MongoDB (Mongoose) |
-| Security | JWT, bcrypt, Helmet, rate limiting, CORS locked to one origin |
-| Hosting | Vercel (frontend), Render (backend), MongoDB Atlas |
+| Layer    | Tools                                                                             |
+| -------- | --------------------------------------------------------------------------------- |
+| Frontend | React (Vite), Socket.IO client, plain CSS                                         |
+| Backend  | Node.js, Express, Socket.IO                                                       |
+| Database | MongoDB (Mongoose)                                                                |
+| Security | JWT, bcrypt, Helmet, rate limiting, CORS locked to one origin                     | 
+| Hosting  | Vercel (frontend), Render (backend), MongoDB Atlas                                |
+| Testing  | Vitest, Supertest, Socket.IO client, mongodb-memory-server, React Testing Library |
 
 ## Quick start
 
 1. Set up and run the backend: see `server/README.md`
 2. Set up and run the frontend: see `client/README.md`
 3. Visit the frontend URL in your browser
+
+## Testing
+
+About 165 automated tests cover the server and the client.
+
+| Part                    | Tools                                                      | What is covered |
+| ----------------------- | ---------------------------------------------------------- | --------------- |
+| Server (`server/tests`) | Vitest, Supertest, Socket.IO client, mongodb-memory-server | Auth rules, friend requests, friend-gated DMs, real-time messaging, replies, edit window, sender-only delete, reactions, rate limiting |
+| Client (`client/src`)   | Vitest, React Testing Library, user-event, jsdom           | Helper functions, composer and emoji picker, message list, message menu, editing, swipe-to-reply |
+
+Run them with `npm test` inside `server/` and inside `client/`. The server tests use a throwaway in-memory MongoDB, so they never touch real data.
 
 ## Known limitations
 
@@ -50,5 +62,5 @@ A real-time chat application with authentication, DMs, groups, friend requests, 
 - **Reactions use a fixed set of six emoji** — the composer has an emoji picker for messages, but reactions deliberately stay limited to the fixed set.
 - **Text only** — no file, photo, or sticker sharing.
 - **No group invite links yet** — new members are added directly by any existing group member; link-based invites are a possible future addition.
-- **No automated tests** — features have been verified by hand.
+- **No end-to-end browser tests** — the project has unit and integration tests for the server and the client components, but nothing that drives a real browser.
 - **Free-tier hosting cold starts** — the backend (Render free tier) sleeps after ~15 minutes of inactivity; the first request after that can take up to a minute to respond. The login screen detects this and shows a "waking up" message rather than appearing frozen.

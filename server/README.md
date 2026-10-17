@@ -51,6 +51,18 @@ npm run dev
 npm start
 ```
 
+## Testing
+
+```bash
+npm test          # run everything once
+npm run test:watch  # re-run on every save
+```
+
+- Tests use Vitest, Supertest (REST routes), `socket.io-client` (real-time events) and `mongodb-memory-server`, a MongoDB that lives in memory for the test run. The first run downloads a MongoDB binary, so it takes longer; later runs reuse it.
+- `tests/setup.js` sets safe environment values (including an unreachable `MONGO_URI`) so tests can never reach a real database.
+- The auth rate limiter and the bcrypt cost are relaxed in test mode; `tests/ratelimit.test.js` turns the limiter back on to test it.
+- Shared helpers: `tests/helpers.js` (create users, make friends), `tests/socketHelpers.js` (real server on a random port, test sockets), `tests/chatWorld.js` (a ready-made scene with two friends chatting).
+
 ## API overview
 
 - `POST /api/auth/signup`, `POST /api/auth/login`

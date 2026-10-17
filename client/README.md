@@ -53,6 +53,15 @@ npm run build
 
 The backend (see `../server/README.md`) must be running and reachable at `VITE_API_URL`.
 
+## Testing
+
+```bash
+npm test          # run everything once
+npm run test:watch  # re-run on every save
+```
+
+Tests use Vitest with jsdom (a simulated browser), React Testing Library and user-event. They sit next to the code they test (`*.test.js` / `*.test.jsx`), and shared helpers live in `src/test/`. They cover the helper functions, the composer and emoji picker, the message list and its menu, editing, and swipe-to-reply. Layout-dependent behaviour (like the emoji picker's scroll highlighting) can't be tested in jsdom and would need a real browser.
+
 ## Project structure
 
 ```
@@ -63,7 +72,8 @@ src/
 │   ├── ConvoMenu, UserMenu, NewChat
 │   └── FriendRequestsModal, GroupMembersModal, ContactInfoModal
 ├── data/         api.js (REST calls), socket.js (Socket.IO client)
-├── utils/        helpers.js (shared helpers, reaction emoji), emojis.js (picker)
 ├── style/        index.css (theme, reset), App.css (component styles)
+├── test/         test setup and shared test helpers
+├── utils/        helpers.js (shared helpers, reaction emoji), emojis.js (picker)
 └── App.jsx       top-level state, socket handlers, layout
 ```

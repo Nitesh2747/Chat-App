@@ -1,0 +1,9 @@
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  test: {
+    environment: 'node',
+    setupFiles: ['./tests/setup.js'],
+    hookTimeout: 120000, // the first run downloads a MongoDB binary, which can take a while
+  },
+});

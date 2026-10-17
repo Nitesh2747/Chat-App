@@ -18,8 +18,8 @@ import Conversation from './models/Conversation.js';
 import FriendRequest from './models/FriendRequest.js';
 import conversationsRouter from './routes/conversations.js';
 
-const app = express();
-const httpServer = createServer(app);
+export const app = express();
+export const httpServer = createServer(app);
 
 export const io = new Server(httpServer, {
   cors: {
@@ -34,6 +34,7 @@ app.use(cors({ origin: process.env.CLIENT_URL }));
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 20,
+  skip: () => process.env.DISABLE_RATE_LIMIT === 'true',
   message: { error: 'Too many attempts, please try again later' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -64,7 +65,7 @@ const onlineUsers = {}; // socket.id -> username (used to resolve who's live in 
 const userSockets = {}; // userId -> Set of socket.id
 const typingByConversation = {}; // conversationId -> Set of usernames
 const EDIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
-const REACTION_EMOJIS = ['😭', '💀', '❤️', '👍', '😂', '😮', '😢'];
+export const REACTION_EMOJIS = ['😭', '💀', '❤️', '👍', '😂', '😮', '😢'];
 
 export function addUserToRoom(userId, roomId) {
   const socketIds = userSockets[userId];
@@ -257,6 +258,9 @@ io.on('connection', (socket) => {
       if (message.user !== username) {
         return socket.emit('edit error', { messageId, error: 'Not your message' });
       }
+      if (message.deleted) {
+        return socket.emit('edit error', { messageId, error: 'Message not found' });
+      }
       if (Date.now() - message.timestamp > EDIT_WINDOW_MS) {
         return socket.emit('edit error', { messageId, error: 'Edit window has expired' });
       }
@@ -422,12 +426,15 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 3001;
 
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => {
-    console.log('Connected to MongoDB');
-    httpServer.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-    });
-  })
-  .catch((err) => console.error('MongoDB connection error:', err));
+// Tests import this file but start their own server and database, so skip this when testing.
+if (process.env.NODE_ENV !== 'test') {
+  mongoose
+    .connect(process.env.MONGO_URI)
+    .then(() => {
+      console.log('Connected to MongoDB');
+      httpServer.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
+      });
+    })
+    .catch((err) => console.error('MongoDB connection error:', err));
+}

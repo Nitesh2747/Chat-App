@@ -3,6 +3,8 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 
+// Hashing is deliberately slow in production; tests use a cheap setting so they run fast.
+const BCRYPT_ROUNDS = process.env.NODE_ENV === 'test' ? 4 : 12;
 const router = express.Router();
 
 function createToken(user) {
@@ -16,15 +18,18 @@ function createToken(user) {
 router.post('/signup', async (req, res) => {
   const { username, password } = req.body;
 
+  if (typeof username !== 'string' || typeof password !== 'string') {
+    return res.status(400).json({ error: 'Username and password are required' });
+  }
   if (!username || username.trim().length < 3 || username.trim().length > 20) {
     return res.status(400).json({ error: 'Username must be between 3-20 characters' });
   }
   if (!password || password.length < 8) {
     return res.status(400).json({ error: 'Password must be at least 8 characters' });
-  } 
+  }
 
   try {
-    const passwordHash = await bcrypt.hash(password, 12);
+    const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
     const user = await User.create({ username, passwordHash });
     res.status(201).json({
       token: createToken(user),
@@ -41,6 +46,10 @@ router.post('/signup', async (req, res) => {
 
 router.post('/login', async (req, res) => {
   const { username, password } = req.body;
+
+  if (typeof username !== 'string' || typeof password !== 'string') {
+    return res.status(400).json({ error: 'Username and password are required' });
+  }
 
   try {
     const user = await User.findOne({ username: username?.trim().toLowerCase() });

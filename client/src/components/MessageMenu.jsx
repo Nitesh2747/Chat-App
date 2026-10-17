@@ -45,7 +45,7 @@ export default function MessageMenu({ items, reactions }) {
 
     return (
         <div className="message-menu-wrapper">
-            <button ref={triggerRef} className="message-menu-trigger" onClick={handleToggle}>
+            <button ref={triggerRef} className="message-menu-trigger" aria-label="Message options" onClick={handleToggle}>
                 ⋮
             </button>
             {open &&
